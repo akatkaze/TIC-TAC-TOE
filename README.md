@@ -201,9 +201,6 @@ Contributions and suggestions are welcome.
 4. Commit your changes with a descriptive message.
 5. Open a pull request describing the improvements.
 
-## License
-
-No license has been specified yet. Add a `LICENSE` file before distributing the project under a particular open-source license.
 
 ## Acknowledgements
 
