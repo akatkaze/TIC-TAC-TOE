@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Player, GameMode, Difficulty, calculateWinner, isBoardFull, getAIMove } from './lib/gameLogic';
 import { playMoveSound, playWinSound, playLoseSound, playDrawSound } from './lib/audio';
@@ -14,6 +14,8 @@ export default function App() {
   const [isClient, setIsClient] = useState(false);
   const [playerXName, setPlayerXName] = useState('Player 1');
   const [playerOName, setPlayerOName] = useState('AI');
+  // Prevent a completed result from being counted more than once.
+  const recordedResultRef = useRef<string | null>(null);
 
   useEffect(() => setIsClient(true), []);
 
@@ -58,6 +60,12 @@ export default function App() {
 
   // UI Sound Effects and Stats update
   useEffect(() => {
+    if (!winner && !isDraw) return;
+
+    const resultKey = `${board.map((square) => square ?? '-').join('')}:${winner ?? 'DRAW'}`;
+    if (recordedResultRef.current === resultKey) return;
+    recordedResultRef.current = resultKey;
+
     if (winner) {
       if (gameMode === 'AI' && winner === 'O') {
          playLoseSound();
@@ -73,7 +81,7 @@ export default function App() {
       playDrawSound();
       setStats(prev => ({ ...prev, draws: prev.draws + 1 }));
     }
-  }, [winner, isDraw, gameMode]);
+  }, [winner, isDraw, gameMode, board]);
 
   // AI Turn handler
   useEffect(() => {
@@ -90,7 +98,10 @@ export default function App() {
   }, [isAITurn, board, difficulty, timeLeft]);
 
   const handlePlay = (index: number, player: Player) => {
-    if (board[index] || winner || (isAITurn && player === 'X')) return;
+    // Validate every move here, including moves triggered by the timer or AI.
+    if (player === null || !Number.isInteger(index) || index < 0 || index >= 9) return;
+    if (board[index] !== null || isGameOver || (isAITurn && player === 'X')) return;
+    if (player !== (xIsNext ? 'X' : 'O')) return;
 
     playMoveSound(player);
     const newBoard = [...board];
@@ -106,6 +117,7 @@ export default function App() {
   };
 
   const resetGame = () => {
+    recordedResultRef.current = null;
     setBoard(Array(9).fill(null));
     setXIsNext(true);
     setTimeLeft(15);
@@ -384,10 +396,13 @@ export default function App() {
             {board.map((square, index) => {
               const isWinningSquare = winningLine?.includes(index);
               return (
-                <div
+                <button
+                  type="button"
                   key={index}
                   onClick={() => handleSquareClick(index)}
-                  className={`
+                  disabled={Boolean(square) || isGameOver || isAITurn}
+                  aria-label={`Square ${index + 1}${square ? `, ${square}` : ', empty'}`}
+                  className={`text-center disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent
                     w-20 h-20 sm:w-24 sm:h-24 md:w-20 md:h-20 lg:w-32 lg:h-32 rounded-2xl flex items-center justify-center transition-all duration-300
                     ${!square && !isGameOver && !isAITurn ? (isDark ? 'hover:bg-white/10 cursor-pointer' : 'hover:bg-emerald-100/60 cursor-pointer') : 'cursor-default'}
                     ${square ? (isDark ? 'bg-white/5 border-white/10 border' : 'bg-emerald-50 border-emerald-400 border-2') : (isDark ? 'bg-white/5 border-white/10 border' : 'bg-white/80 border-emerald-300 border-2')}
@@ -409,7 +424,7 @@ export default function App() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
+                </button>
               );
             })}
             {/* Ambient pulse effect over the grid when game is active */}

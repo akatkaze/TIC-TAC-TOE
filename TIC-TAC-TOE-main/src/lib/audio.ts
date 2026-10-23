@@ -13,6 +13,10 @@ export const playTone = (frequency: number, type: OscillatorType, duration: numb
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     
+    osc.onended = () => {
+      // Release the per-sound AudioContext instead of leaving it alive.
+      void audioCtx.close();
+    };
     osc.start();
     osc.stop(audioCtx.currentTime + duration);
   } catch (e) {

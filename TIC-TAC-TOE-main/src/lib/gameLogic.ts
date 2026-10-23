@@ -51,6 +51,7 @@ function getAvailableMoves(board: Player[]): number[] {
  */
 function getRandomMove(board: Player[]): number {
   const moves = getAvailableMoves(board);
+  if (moves.length === 0) return -1;
   const randomIndex = Math.floor(Math.random() * moves.length);
   return moves[randomIndex];
 }
@@ -99,6 +100,7 @@ function getBestMove(board: Player[], aiPlayer: Player, humanPlayer: Player): nu
   let bestScore = -Infinity;
   let move = -1;
   const availableMoves = getAvailableMoves(board);
+  if (availableMoves.length === 0) return -1;
 
   // Optimization: If it's the very first move of the game, take an optimal spot instantly
   // to avoid large minimax tree computation at depth 9.
@@ -125,6 +127,8 @@ function getBestMove(board: Player[], aiPlayer: Player, humanPlayer: Player): nu
  * Main AI function that returns a move index between 0-8 based on the set difficulty.
  */
 export function getAIMove(board: Player[], difficulty: Difficulty, aiPlayer: Player = 'O'): number {
+  if (board.length !== 9 || !board.includes(null)) return -1;
+  if (aiPlayer === null) return -1;
   const humanPlayer = aiPlayer === 'X' ? 'O' : 'X';
   const r = Math.random();
   
